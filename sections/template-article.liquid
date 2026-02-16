@@ -1,0 +1,186 @@
+{% comment %}
+  Renders a single blog article. Used on the article template.
+  URL format: yourstore.com/blogs/blog-handle/article-handle
+  All visibility and layout options are editable via theme customizer.
+{% endcomment %}
+
+{%- liquid
+  assign show_title = section.settings.show_title
+  assign show_metadata = section.settings.show_metadata
+  assign show_featured_image = section.settings.show_featured_image
+  assign show_back_link = section.settings.show_back_link
+  assign title_alignment = section.settings.title_alignment
+  assign title_size = section.settings.title_size
+  assign content_width = section.settings.content_width
+  assign image_width = section.settings.image_width
+  assign back_link_text = section.settings.back_link_text
+-%}
+{% if back_link_text != blank %}
+  {% assign back_link_label = back_link_text %}
+{% else %}
+  {% assign back_link_label = 'Back to ' | append: blog.title %}
+{% endif %}
+
+<article class="article article--width-{{ content_width }}" itemscope itemtype="http://schema.org/Article">
+  <header class="article__header article__header--align-{{ title_alignment }} article__title--{{ title_size }}">
+    {% if show_title %}
+      <h1 class="article__title" itemprop="headline">{{ article.title }}</h1>
+    {% endif %}
+    {% if show_metadata %}
+      {% assign date = article.published_at | time_tag: format: 'date' %}
+      <p class="article__meta">{{ 'blog.article_metadata_html' | t: date: date, author: article.author }}</p>
+    {% endif %}
+  </header>
+
+  {% if show_featured_image and article.image %}
+    <div class="article__image article__image--{{ image_width }}">
+      {{ article.image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '400, 600, 800, 1000, 1200', sizes: '(min-width: 1200px) 1200px, 100vw', alt: article.image.alt | default: article.title }}
+    </div>
+  {% endif %}
+
+  <div class="article__content rte article__content--{{ content_width }}" itemprop="articleBody">
+    {{ article.content }}
+  </div>
+
+  {% if show_back_link %}
+    <footer class="article__footer">
+      <a href="{{ blog.url }}" class="article__back-link">← {{ back_link_label }}</a>
+    </footer>
+  {% endif %}
+</article>
+
+<style>
+  .article { margin: 0 auto; padding: 1.5rem 1rem; }
+  .article--width-full { max-width: 100%; }
+  .article--width-medium { max-width: 48rem; }
+  .article--width-narrow { max-width: 40rem; }
+  .article__header { margin-bottom: 1rem; }
+  .article__header--align-left { text-align: left; }
+  .article__header--align-center { text-align: center; }
+  .article__header--align-right { text-align: right; }
+  .article__title { margin: 0 0 0.5rem; line-height: 1.2; }
+  .article__title--small { font-size: 1.5rem; }
+  .article__title--medium { font-size: 2rem; }
+  .article__title--large { font-size: 2.5rem; }
+  .article__meta { margin: 0; opacity: 0.85; font-size: 0.9rem; }
+  .article__image { margin: 1.5rem 0; line-height: 0; }
+  .article__image--full { width: 100%; }
+  .article__image--large { max-width: 900px; margin-left: auto; margin-right: auto; }
+  .article__image--medium { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .article__image img { width: 100%; height: auto; display: block; }
+  .article__content { margin-top: 1.5rem; }
+  .article__content.rte img { max-width: 100%; height: auto; }
+  .article__footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.1); }
+  .article__back-link { font-size: 0.95rem; }
+</style>
+
+{% schema %}
+{
+  "name": "Article",
+  "tag": "section",
+  "class": "article-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Title"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show article title",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "title_size",
+      "label": "Title size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "select",
+      "id": "title_alignment",
+      "label": "Title alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "header",
+      "content": "Metadata"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_metadata",
+      "label": "Show date and author",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Featured image"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_featured_image",
+      "label": "Show featured image",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "image_width",
+      "label": "Image width",
+      "options": [
+        { "value": "full", "label": "Full width" },
+        { "value": "large", "label": "Large" },
+        { "value": "medium", "label": "Medium" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "content_width",
+      "label": "Content width",
+      "options": [
+        { "value": "full", "label": "Full width" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "narrow", "label": "Narrow" }
+      ],
+      "default": "medium",
+      "info": "Width of the article text and title area."
+    },
+    {
+      "type": "header",
+      "content": "Back to blog link"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_back_link",
+      "label": "Show back to blog link",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "back_link_text",
+      "label": "Back link text (optional)",
+      "info": "Leave blank to use default: \"Back to [blog name]\"."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Article",
+      "category": "Blog"
+    }
+  ]
+}
+{% endschema %}

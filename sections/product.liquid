@@ -18,7 +18,7 @@
 </div>
 
 <div class="product-form">
-  {% form 'product', product %}
+  {% form 'product', product, class: 'product-form-ajax' %}
     {% assign current_variant = product.selected_or_first_available_variant %}
 
     <select name="id">
@@ -34,12 +34,61 @@
       {% endfor %}
     </select>
 
-    <input type="text" name="quantity" min="1" value="1">
+    <input type="number" name="quantity" min="1" value="1">
 
-    <input type="submit" value="Add to cart">
+    <button type="submit" class="add-to-cart-btn">Add to cart</button>
     {{ form | payment_button }}
   {% endform %}
 </div>
+
+<script>
+(function() {
+  var form = document.querySelector('.product-form-ajax');
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = form.querySelector('.add-to-cart-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+    var action = form.getAttribute('action') || '{{ routes.cart_add_url }}';
+    fetch(action, {
+      method: 'POST',
+      body: new FormData(form),
+      credentials: 'same-origin',
+      redirect: 'manual'
+    }).then(function(res) {
+      if (res.status === 422 || res.status === 400) {
+        res.text().then(function(text) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
+          var msg = 'Could not add to cart.';
+          try {
+            if (text) {
+              var data = JSON.parse(text);
+              msg = data.message || data.description || msg;
+            }
+          } catch (e) {}
+          alert(msg);
+        });
+        return;
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
+      if (res.type === 'opaqueredirect' || res.status === 0 || res.status === 302 || res.status === 200) {
+        window.location.href = '{{ routes.cart_url }}';
+        return;
+      }
+      res.text().then(function(text) {
+        var msg = 'Could not add to cart. Please try again.';
+        try {
+          if (text) { var d = JSON.parse(text); msg = (d && (d.message || d.description)) || msg; } catch (e) {}
+        } catch (e) {}
+        alert(msg);
+      }).catch(function() { alert('Could not add to cart. Please try again.'); });
+    }).catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
+      alert('Could not add to cart. Please try again.');
+    });
+  });
+})();
+</script>
 
 {% schema %}
 {

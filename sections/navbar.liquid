@@ -12,6 +12,8 @@
 
       <!-- Desktop: nav + cart/login (hidden on mobile) -->
       <nav class="hidden md:flex items-center space-x-10">
+        <a href="{{ routes.root_url }}" class="text-base text-gray-500 hover:text-gray-900">Home</a>
+        <a href="{{ routes.all_products_collection_url }}" class="text-base text-gray-500 hover:text-gray-900">Shop</a>
         {% for link in main_menu_linklists %}
           {% if link.links != blank %}
             <div class="relative">
@@ -86,6 +88,8 @@
     style="display: none;"
   >
       <div class="px-4 py-4 space-y-1 border-b border-gray-100">
+        <a href="{{ routes.root_url }}" class="block py-4 text-base font-medium text-gray-900 border-b border-gray-100" @click="mobileOpen = false">Home</a>
+        <a href="{{ routes.all_products_collection_url }}" class="block py-4 text-base font-medium text-gray-900 border-b border-gray-100" @click="mobileOpen = false">Shop</a>
         {% for link in main_menu_linklists %}
           {% if link.links != blank %}
             <div class="border-b border-gray-100 last:border-0">

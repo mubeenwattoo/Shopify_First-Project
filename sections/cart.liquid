@@ -1,37 +1,41 @@
 {% comment %}
-  This section is used in the cart template to render /cart page with an
-  overview of the items in customer's cart.
-
-  https://shopify.dev/docs/storefronts/themes/architecture/templates/cart
+  Cart section: empty state (centered) or cart with items.
 {% endcomment %}
 
-<h1>{{ 'cart.title' | t }}</h1>
+{% if cart.item_count == 0 %}
+  <div class="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
+    <h1 class="mb-2 text-2xl font-semibold">Your cart is empty</h1>
+    <p class="mb-6 text-gray-600">Add products from the shop to get started.</p>
+    <a href="{{ routes.all_products_collection_url }}" class="inline-block px-6 py-3 bg-black text-white no-underline rounded font-medium hover:opacity-90">Continue shopping</a>
+  </div>
+{% else %}
+  <div class="cart-page max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold mb-6">Your cart ({{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }})</h1>
+    <div class="cart-items space-y-4 mb-8">
+      {% for item in cart.items %}
+        <div class="cart-item flex gap-4 p-4 border rounded-lg">
+          <a href="{{ item.url }}" class="shrink-0 w-20 h-20 bg-gray-100 rounded overflow-hidden">
+            {% if item.image %}
+              <img src="{{ item.image | image_url: width: 160 }}" alt="{{ item.image.alt | default: item.title | escape }}" width="80" height="80" class="w-full h-full object-cover">
+            {% endif %}
+          </a>
+          <div class="flex-1 min-w-0">
+            <a href="{{ item.url }}" class="font-medium text-gray-900 hover:underline">{{ item.product.title }}</a>
+            {% if item.variant.title != 'Default Title' %}
+              <p class="text-sm text-gray-600">{{ item.variant.title }}</p>
+            {% endif %}
+            <p class="text-sm text-gray-700 mt-1">{{ item.final_line_price | money }} × {{ item.quantity }}</p>
+          </div>
+          <div class="shrink-0 text-right font-medium">{{ item.final_line_price | money }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="cart-footer border-t pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <p class="text-xl font-semibold">Total: {{ cart.total_price | money }}</p>
+      <a href="{{ routes.all_products_collection_url }}" class="inline-block px-4 py-2 border border-gray-300 rounded font-medium hover:bg-gray-50 no-underline text-center">Continue shopping</a>
+      <a href="{{ routes.root }}checkout" class="inline-block w-full sm:w-auto px-6 py-3 bg-black text-white font-medium rounded hover:opacity-90 text-center no-underline">Checkout</a>
+    </div>
+  </div>
+{% endif %}
 
-<form action="{{ routes.cart_url }}" method="post">
-  <table>
-    {% for item in cart.items %}
-      <tr>
-        <td>
-          {% render 'image', image: item.image, url: item.url %}
-        </td>
-        <td>
-          <p>{{ item.product.title }}</p>
-          {{ 'cart.remove' | t | link_to: item.url_to_remove }}
-        </td>
-        <td>
-          <input type="text" name="updates[]" value="{{ item.quantity }}">
-          <input type="submit" value="{{ 'cart.update' | t }}">
-        </td>
-      </tr>
-    {% endfor %}
-  </table>
 
-  <input type="submit" name="checkout" value="{{ 'cart.checkout' | t }}">
-</form>
-
-{% schema %}
-{
-  "name": "t:general.cart",
-  "settings": []
-}
-{% endschema %}
