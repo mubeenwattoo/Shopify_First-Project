@@ -5,6 +5,8 @@
   https://shopify.dev/docs/storefronts/themes/architecture/templates/product
 {% endcomment %}
 
+{% assign store_root = shop.permanent_domain | prepend: 'https://' %}
+<div class="product-page-section" data-store-root="{{ store_root }}">
 <div class="product-images">
   {% for image in product.images %}
     {% render 'image', class: 'product-image', image: image %}
@@ -40,51 +42,41 @@
     {{ form | payment_button }}
   {% endform %}
 </div>
+</div>
 
 <script>
 (function() {
-  var form = document.querySelector('.product-form-ajax');
+  var section = document.querySelector('.product-page-section');
+  if (!section) return;
+  var form = section.querySelector('.product-form-ajax');
   if (!form) return;
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = form.querySelector('.add-to-cart-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-    var action = form.getAttribute('action') || '{{ routes.cart_add_url }}';
+    var action = (form.getAttribute('action') || '').replace(/^https?:\/\/[^/]+/, '') || '/cart/add';
+    if (!action.startsWith('/')) action = '/' + action;
     fetch(action, {
       method: 'POST',
       body: new FormData(form),
       credentials: 'same-origin',
-      redirect: 'manual'
-    }).then(function(res) {
-      if (res.status === 422 || res.status === 400) {
-        res.text().then(function(text) {
-          if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
-          var msg = 'Could not add to cart.';
-          try {
-            if (text) {
-              var data = JSON.parse(text);
-              msg = data.message || data.description || msg;
-            }
-          } catch (e) {}
-          alert(msg);
-        });
-        return;
+      redirect: 'follow'
+    }).then(function() {
+      var isLocal = /^127\.0\.0\.1$|^localhost$/i.test(window.location.hostname);
+      var storeRoot = section.getAttribute('data-store-root');
+      if (isLocal && storeRoot) {
+        window.location.href = storeRoot + '/cart';
+      } else {
+        window.location.href = '/cart';
       }
-      if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
-      if (res.type === 'opaqueredirect' || res.status === 0 || res.status === 302 || res.status === 200) {
-        window.location.href = '{{ routes.cart_url }}';
-        return;
-      }
-      res.text().then(function(text) {
-        var msg = 'Could not add to cart. Please try again.';
-        try {
-          if (text) { var d = JSON.parse(text); msg = (d && (d.message || d.description)) || msg; } catch (e) {}
-        } catch (e) {}
-        alert(msg);
-      }).catch(function() { alert('Could not add to cart. Please try again.'); });
     }).catch(function() {
-      if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
-      alert('Could not add to cart. Please try again.');
+      var isLocal = /^127\.0\.0\.1$|^localhost$/i.test(window.location.hostname);
+      var storeRoot = section.getAttribute('data-store-root');
+      if (isLocal && storeRoot) {
+        window.location.href = storeRoot + '/cart';
+      } else {
+        window.location.href = '/cart';
+      }
     });
   });
 })();

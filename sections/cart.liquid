@@ -4,38 +4,87 @@
 
 {% if cart.item_count == 0 %}
   <div class="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
-    <h1 class="mb-2 text-2xl font-semibold">Your cart is empty</h1>
-    <p class="mb-6 text-gray-600">Add products from the shop to get started.</p>
-    <a href="{{ routes.all_products_collection_url }}" class="inline-block px-6 py-3 bg-black text-white no-underline rounded font-medium hover:opacity-90">Continue shopping</a>
+    <h1 class="mb-6 text-2xl font-semibold">Your cart is empty</h1>
+    <a href="{{ routes.all_products_collection_url }}" class="inline-block px-6 py-3 bg-black text-white no-underline rounded font-medium hover:opacity-90">Continue</a>
   </div>
 {% else %}
-  <div class="cart-page max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-semibold mb-6">Your cart ({{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }})</h1>
-    <div class="cart-items space-y-4 mb-8">
-      {% for item in cart.items %}
-        <div class="cart-item flex gap-4 p-4 border rounded-lg">
-          <a href="{{ item.url }}" class="shrink-0 w-20 h-20 bg-gray-100 rounded overflow-hidden">
-            {% if item.image %}
-              <img src="{{ item.image | image_url: width: 160 }}" alt="{{ item.image.alt | default: item.title | escape }}" width="80" height="80" class="w-full h-full object-cover">
-            {% endif %}
-          </a>
-          <div class="flex-1 min-w-0">
-            <a href="{{ item.url }}" class="font-medium text-gray-900 hover:underline">{{ item.product.title }}</a>
-            {% if item.variant.title != 'Default Title' %}
-              <p class="text-sm text-gray-600">{{ item.variant.title }}</p>
-            {% endif %}
-            <p class="text-sm text-gray-700 mt-1">{{ item.final_line_price | money }} × {{ item.quantity }}</p>
-          </div>
-          <div class="shrink-0 text-right font-medium">{{ item.final_line_price | money }}</div>
+  <div class="cart-with-items" data-cart-item-count="{{ cart.item_count }}">
+    <div class="cart-page container mx-auto px-4 py-8 lg:py-12">
+      <h1 class="cart-page__title text-3xl font-bold tracking-tight text-gray-900 mb-8">Your cart</h1>
+
+      <form action="{{ routes.cart_url }}" method="post" class="cart-page__form lg:grid lg:grid-cols-12 lg:gap-10">
+        <input type="hidden" name="attributes[cart_source]" value="cart_page">
+
+        {% comment %} Left column: line items {% endcomment %}
+        <div class="cart-page__items lg:col-span-7 space-y-4 mb-8 lg:mb-0">
+          {% for item in cart.items %}
+            <article class="cart-page__item flex gap-4 p-4 lg:p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <a href="{{ item.url }}" class="cart-page__item-image shrink-0 w-28 h-28 lg:w-32 lg:h-32 rounded-lg overflow-hidden bg-gray-100">
+                {% if item.image %}
+                  <img
+                    src="{{ item.image | image_url: width: 256 }}"
+                    alt="{{ item.image.alt | default: item.title | escape }}"
+                    width="128"
+                    height="128"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  >
+                {% endif %}
+              </a>
+              <div class="cart-page__item-details flex-1 min-w-0 flex flex-col">
+                <a href="{{ item.url }}" class="cart-page__item-title font-semibold text-gray-900 hover:underline text-lg">{{ item.product.title }}</a>
+                {% if item.variant.title != 'Default Title' %}
+                  <p class="text-sm text-gray-500 mt-0.5">{{ item.variant.title }}</p>
+                {% endif %}
+                <p class="cart-page__item-price font-semibold text-gray-900 mt-1">{{ item.final_line_price | money }}</p>
+                <div class="cart-page__item-actions mt-auto pt-3 flex flex-wrap items-center gap-3">
+                  <label for="updates_{{ item.key }}" class="sr-only">Quantity for {{ item.title }}</label>
+                  <input
+                    type="number"
+                    name="updates[]"
+                    id="updates_{{ item.key }}"
+                    value="{{ item.quantity }}"
+                    min="1"
+                    class="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-medium"
+                    data-index="{{ forloop.index0 }}"
+                  >
+                  <a href="/cart/change?id={{ item.key }}&quantity=0" class="text-sm text-red-600 hover:text-red-700 font-medium" aria-label="Remove {{ item.title }}">Remove</a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
         </div>
-      {% endfor %}
-    </div>
-    <div class="cart-footer border-t pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <p class="text-xl font-semibold">Total: {{ cart.total_price | money }}</p>
-      <a href="{{ routes.all_products_collection_url }}" class="inline-block px-4 py-2 border border-gray-300 rounded font-medium hover:bg-gray-50 no-underline text-center">Continue shopping</a>
-      <a href="{{ routes.root }}checkout" class="inline-block w-full sm:w-auto px-6 py-3 bg-black text-white font-medium rounded hover:opacity-90 text-center no-underline">Checkout</a>
+
+        {% comment %} Right column: order summary (sticky on desktop) {% endcomment %}
+        <div class="cart-page__summary lg:col-span-5">
+          <div class="cart-page__summary-box sticky top-6 p-6 lg:p-8 bg-gray-50 border border-gray-200 rounded-xl">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Order summary</h2>
+            <div class="flex justify-between text-base text-gray-600 mb-2">
+              <span>Subtotal ({{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }})</span>
+              <span class="font-semibold text-gray-900">{{ cart.total_price | money }}</span>
+            </div>
+            <p class="text-sm text-gray-500 mb-6">Shipping and taxes calculated at checkout.</p>
+            <div class="cart-page__summary-actions space-y-3">
+              <button type="submit" name="checkout" class="cart-page__checkout-btn w-full py-4 px-6 bg-gray-900 text-white text-base font-semibold rounded-xl hover:bg-gray-800 transition-colors">
+                Checkout
+              </button>
+              <button type="submit" name="update" class="w-full py-3 px-6 border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-100 transition-colors">
+                Update quantities
+              </button>
+            </div>
+            <a href="{{ routes.all_products_collection_url }}" class="cart-page__continue mt-6 block text-center text-sm font-medium text-gray-600 hover:text-gray-900">
+              ← Continue shopping
+            </a>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
+
+  <style>
+    .cart-page__form { outline: none; }
+    .cart-page__checkout-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  </style>
 {% endif %}
 
 

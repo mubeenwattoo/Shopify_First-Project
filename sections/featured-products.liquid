@@ -8,7 +8,8 @@
   {% assign collection = collections.all %}
 {% endif %}
 
-<div class="featured-products container mx-auto px-4 py-8">
+{% assign store_root = shop.permanent_domain | prepend: 'https://' %}
+<div class="featured-products container mx-auto px-4 py-8" data-store-root="{{ store_root }}">
   {% if section.settings.heading != blank %}
     <h2 class="text-2xl font-semibold mb-6">{{ section.settings.heading }}</h2>
   {% endif %}
@@ -54,15 +55,30 @@
       e.preventDefault();
       var btn = form.querySelector('.add-to-cart-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-      fetch(form.action || '/cart/add', {
+      // Always use relative URL so same behaviour on store and local dev (127.0.0.1)
+      var action = (form.getAttribute('action') || '').replace(/^https?:\/\/[^/]+/, '') || '/cart/add';
+      if (!action.startsWith('/')) action = '/' + action;
+      fetch(action, {
         method: 'POST',
         body: new FormData(form),
         credentials: 'same-origin',
-        redirect: 'manual'
-      }).then(function(res) {
-        window.location.href = '/cart';
+        redirect: 'follow'
+      }).then(function() {
+        var isLocal = /^127\.0\.0\.1$|^localhost$/i.test(window.location.hostname);
+        var storeRoot = section.getAttribute('data-store-root');
+        if (isLocal && storeRoot) {
+          window.location.href = storeRoot + '/cart';
+        } else {
+          window.location.href = '/cart';
+        }
       }).catch(function() {
-        window.location.href = '/cart';
+        var isLocal = /^127\.0\.0\.1$|^localhost$/i.test(window.location.hostname);
+        var storeRoot = section.getAttribute('data-store-root');
+        if (isLocal && storeRoot) {
+          window.location.href = storeRoot + '/cart';
+        } else {
+          window.location.href = '/cart';
+        }
       });
     });
   });
